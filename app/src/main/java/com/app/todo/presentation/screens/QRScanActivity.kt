@@ -62,14 +62,4 @@ class QRScanActivity : ComponentActivity() {
 
     }
 
-    private fun setResults(data: String) {
-        val intent = Intent()
-        intent.putExtra(QR_DATA, data)
-        setResult(RESULT_OK, intent)
-        finish()
-    }
-
-    companion object {
-        const val QR_DATA = "qr_data"
-    }
 }

@@ -9,11 +9,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
@@ -54,7 +57,10 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun MainScreen() {
         val context = LocalContext.current
-        ConstraintLayout(modifier = Modifier.fillMaxSize()) {
+        ConstraintLayout(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
             val (import, addImg, heading, searchBar, list) = createRefs()
             Image(
                 painter = painterResource(id = R.drawable.add),
@@ -112,7 +118,7 @@ class MainActivity : ComponentActivity() {
 
                 MainViewModel.State.Loading -> {}
                 is MainViewModel.State.Success -> TodoList(state.data, modifier = Modifier
-                    .padding(top = 50.dp)
+                    .padding(vertical = 50.dp)
                     .constrainAs(list) {
                         top.linkTo(searchBar.bottom)
                         bottom.linkTo(parent.bottom)
