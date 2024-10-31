@@ -5,6 +5,7 @@
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
+
     <uses-permission android:name="android.permission.CAMERA" />
 
     <application
@@ -17,6 +18,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ToDo"
         tools:targetApi="31">
+        <activity
+            android:name=".presentation.screens.QRGeneratorActivity"
+            android:exported="false"
+            android:label="@string/title_activity_qrgenerator"
+            android:theme="@style/Theme.ToDo" />
         <activity
             android:name=".presentation.screens.QRScanActivity"
             android:exported="false"

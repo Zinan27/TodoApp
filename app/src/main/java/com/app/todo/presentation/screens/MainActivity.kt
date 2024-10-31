@@ -46,17 +46,6 @@ class MainActivity : ComponentActivity() {
                 MainScreen()
             }
         }
-
-        try {
-            val cypher = AESCrypt.encrypt("Mubbashir Ahmed")
-            cypher?.let {
-                Log.d("asdasfdasfa", cypher.toString())
-            } ?: run {
-                Log.d("asdasfdasfa", "null")
-            }
-        } catch (ex: Exception) {
-            Log.d("asdasfdasfa", "Exception")
-        }
     }
 
     @Composable

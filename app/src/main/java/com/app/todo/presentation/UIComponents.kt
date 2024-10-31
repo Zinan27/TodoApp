@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.app.todo.R
+import com.app.todo.presentation.screens.QRGeneratorActivity
 import com.app.todo.presentation.screens.QRScanActivity
 import com.app.todo.presentation.screens.ui.theme.LightBlue
 import com.app.todo.presentation.screens.ui.theme.PrimaryColor
@@ -210,9 +211,9 @@ fun TodoItem(callBack: () -> Unit = {}) {
                 end.linkTo(parent.end)
                 start.linkTo(parent.start)
                 bottom.linkTo(parent.bottom, margin = 16.dp)
-            }) {
-            context.startActivity(Intent(context, QRScanActivity::class.java))
-        }
+            }, share = {
+            context.startActivity(Intent(context, QRGeneratorActivity::class.java))
+        })
     }
 
 }

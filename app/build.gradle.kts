@@ -71,6 +71,9 @@ dependencies {
     implementation("com.google.mlkit:barcode-scanning:17.0.3")
     implementation("com.google.accompanist:accompanist-permissions:0.28.0")
 
+    //QR Generator
+    implementation("com.journeyapps:zxing-android-embedded:4.2.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
