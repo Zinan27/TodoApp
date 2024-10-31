@@ -1,5 +1,6 @@
 package com.app.todo.presentation
 
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.app.todo.R
+import com.app.todo.presentation.screens.QRScanActivity
 import com.app.todo.presentation.screens.ui.theme.LightBlue
 import com.app.todo.presentation.screens.ui.theme.PrimaryColor
 import com.app.todo.utils.getDateTimeFromTimestamp
@@ -154,6 +157,8 @@ fun CustomTextField(modifier: Modifier, hint: String = "") {
 @Composable
 fun TodoItem(callBack: () -> Unit = {}) {
 
+    val context = LocalContext.current
+
     ConstraintLayout(
         modifier = Modifier
             .padding(vertical = 5.dp)
@@ -205,13 +210,15 @@ fun TodoItem(callBack: () -> Unit = {}) {
                 end.linkTo(parent.end)
                 start.linkTo(parent.start)
                 bottom.linkTo(parent.bottom, margin = 16.dp)
-            })
+            }) {
+            context.startActivity(Intent(context, QRScanActivity::class.java))
+        }
     }
 
 }
 
 @Composable
-fun OptionsRow(modifier: Modifier) {
+fun OptionsRow(modifier: Modifier, share: () -> Unit) {
     Row(modifier = modifier.fillMaxWidth()) {
         Image(
             painter = painterResource(id = R.drawable.edit),
@@ -233,6 +240,9 @@ fun OptionsRow(modifier: Modifier) {
             modifier = Modifier
                 .padding(start = 8.dp)
                 .size(20.dp)
+                .clickable {
+                    share()
+                }
         )
     }
 }
