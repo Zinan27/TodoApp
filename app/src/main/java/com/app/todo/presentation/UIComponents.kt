@@ -1,7 +1,6 @@
 package com.app.todo.presentation
 
 import android.content.Intent
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -41,10 +41,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.app.todo.R
-import com.app.todo.presentation.screens.QRScanActivity
+import com.app.todo.db.entities.TodoEntity
+import com.app.todo.presentation.screens.QRGeneratorActivity
 import com.app.todo.presentation.screens.ui.theme.LightBlue
 import com.app.todo.presentation.screens.ui.theme.PrimaryColor
 import com.app.todo.utils.getDateTimeFromTimestamp
+import com.google.gson.Gson
 
 @Composable
 fun HeadingText(
@@ -127,14 +129,19 @@ fun CustomSearchBar(modifier: Modifier) {
 
 
 @Composable
-fun CustomTextField(modifier: Modifier, hint: String = "") {
-    var text by remember { mutableStateOf("") }
+fun CustomTextField(
+    modifier: Modifier,
+    hint: String = "",
+    initialValue: String = "",
+    onValueChange: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(initialValue) }
     TextField(
-
         maxLines = 2,
         value = text,
         onValueChange = {
             text = it
+            onValueChange(text)
         },
         placeholder = { Text(text = hint) },
         modifier = modifier
@@ -155,7 +162,7 @@ fun CustomTextField(modifier: Modifier, hint: String = "") {
 }
 
 @Composable
-fun TodoItem(callBack: () -> Unit = {}) {
+fun TodoItem(todoEntity: TodoEntity, callBack: () -> Unit = {}) {
 
     val context = LocalContext.current
 
@@ -186,33 +193,44 @@ fun TodoItem(callBack: () -> Unit = {}) {
         Box(modifier = Modifier
             .padding(10.dp)
             .size(15.dp)
-            .background(Color.Red, shape = CircleShape)
+            .background(
+                if (todoEntity.timeStamp < System.currentTimeMillis()) Color.Red else Color.Green,
+                shape = CircleShape
+            )
             .constrainAs(indicator) {
                 top.linkTo(parent.top)
                 end.linkTo(parent.end)
             })
 
-        SmallHeadingText(text = "This is title", modifier = Modifier.constrainAs(headingText) {
+        SmallHeadingText(text = todoEntity.title, modifier = Modifier.constrainAs(headingText) {
             top.linkTo(icon.top)
             start.linkTo(icon.end, margin = 5.dp)
         })
 
-        DescriptionText(text = "10 Oct 2024", modifier = Modifier.constrainAs(descriptionText) {
+        DescriptionText(text = todoEntity.date, modifier = Modifier.constrainAs(descriptionText) {
             top.linkTo(headingText.bottom, margin = 2.dp)
             start.linkTo(icon.start)
 
         })
 
-        OptionsRow(modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .constrainAs(optionsRow) {
-                top.linkTo(descriptionText.bottom, 3.dp)
-                end.linkTo(parent.end)
-                start.linkTo(parent.start)
-                bottom.linkTo(parent.bottom, margin = 16.dp)
-            }) {
-            context.startActivity(Intent(context, QRScanActivity::class.java))
-        }
+        Image(
+            painter = painterResource(id = R.drawable.share),
+            contentDescription = "Share button",
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .size(20.dp)
+                .constrainAs(optionsRow) {
+                    top.linkTo(descriptionText.bottom, 3.dp)
+                    end.linkTo(parent.end, margin = 16.dp)
+                    bottom.linkTo(parent.bottom, margin = 16.dp)
+                }
+                .clickable {
+                    context.startActivity(Intent(context, QRGeneratorActivity::class.java).also {
+                        it.putExtra(QRGeneratorActivity.TODO_DATA, Gson().toJson(todoEntity))
+                    })
+                }
+        )
+
     }
 
 }
@@ -276,34 +294,62 @@ fun DatePickerModal(
 }
 
 @Composable
-fun ChooseIconField(modifier: Modifier) {
+fun ChooseIconField(selectedIcon: Int, modifier: Modifier, callBack: (Int) -> Unit) {
     Row(
         modifier = modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        IconImage(icon = R.drawable.work)
-        IconImage(icon = R.drawable.medicine)
-        IconImage(icon = R.drawable.education)
-        IconImage(icon = R.drawable.exercise)
-        IconImage(icon = R.drawable.food)
-        IconImage(icon = R.drawable.prayer)
+        IconImage(icon = R.drawable.work, selectedIcon == 1) {
+            callBack(1)
+        }
+        IconImage(icon = R.drawable.medicine, selectedIcon == 2) {
+            callBack(2)
+        }
+        IconImage(icon = R.drawable.education, selectedIcon == 3) {
+            callBack(3)
+        }
+        IconImage(icon = R.drawable.exercise, selectedIcon == 4) {
+            callBack(4)
+        }
+        IconImage(icon = R.drawable.food, selectedIcon == 5) {
+            callBack(5)
+        }
+        IconImage(icon = R.drawable.prayer, selectedIcon == 6) {
+            callBack(6)
+        }
     }
 }
 
 @Composable
-fun IconImage(icon: Int) {
-    Image(
-        painter = painterResource(id = icon),
-        contentDescription = "Work Icon",
-        modifier = Modifier.size(30.dp)
-    )
+fun IconImage(icon: Int, isSelected: Boolean, callBack: () -> Unit) {
+    Box(contentAlignment = Alignment.Center) {
+
+        Image(
+            painter = painterResource(id = icon),
+            contentDescription = "Icon",
+            modifier = Modifier
+                .size(30.dp)
+                .clickable {
+                    callBack()
+                }
+        )
+
+        if (isSelected) {
+            Image(
+                painter = painterResource(id = R.drawable.check),
+                contentDescription = "Work Icon",
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+
 }
 
 
 @Composable
-fun DatePickerField(modifier: Modifier) {
+fun DatePickerField(timeStamp: Long, modifier: Modifier, callBack: (Long) -> Unit) {
 
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -322,7 +368,7 @@ fun DatePickerField(modifier: Modifier) {
             modifier = Modifier.padding(start = 16.dp, top = 10.dp)
         )
         DescriptionText(
-            text = "15 Oct, 2023",
+            text = getDateTimeFromTimestamp(timeStamp),
             modifier = Modifier.padding(start = 16.dp)
         )
     }
@@ -330,8 +376,7 @@ fun DatePickerField(modifier: Modifier) {
     if (showDatePicker) {
         DatePickerModal(onDateSelected = { dateTime ->
             dateTime?.let {
-                val date = getDateTimeFromTimestamp(it)
-                Log.d("getDateTimeFromTimestamp", date)
+                callBack(it)
             }
             showDatePicker = false
         }) {
