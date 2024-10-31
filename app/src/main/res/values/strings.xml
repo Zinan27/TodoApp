@@ -3,4 +3,5 @@
     <string name="search">Search</string>
     <string name="title_activity_add_notes">AddNotesActivity</string>
     <string name="title">Add Title</string>
+    <string name="title_activity_qrscan">QRScanActivity</string>
 </resources>
