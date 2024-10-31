@@ -2,42 +2,40 @@ package com.app.todo.presentation.screens
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.app.todo.R
+import com.app.todo.db.entities.TodoEntity
 import com.app.todo.presentation.CustomSearchBar
 import com.app.todo.presentation.HeadingText
+import com.app.todo.presentation.SmallHeadingText
 import com.app.todo.presentation.TodoItem
 import com.app.todo.presentation.screens.ui.theme.ToDoTheme
-import com.app.todo.utils.AESCrypt
+import com.app.todo.presentation.viewmodels.MainViewModel
+import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val resultContract =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == RESULT_OK) {
-                val data = it.data?.getStringExtra(QRScanActivity.QR_DATA) ?: ""
-                Toast.LENGTH_SHORT
-                Toast.makeText(
-                    this, data, Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
+    private val mainViewModel by viewModels<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +44,11 @@ class MainActivity : ComponentActivity() {
                 MainScreen()
             }
         }
+
+    }
+
+    private fun getData() {
+        mainViewModel.getAllTodos()
     }
 
     @Composable
@@ -87,7 +90,7 @@ class MainActivity : ComponentActivity() {
                         bottom.linkTo(heading.bottom)
                     }
                     .clickable {
-                        resultContract.launch(Intent(context, QRScanActivity::class.java))
+                        startActivity(Intent(context, QRScanActivity::class.java))
                     }
             )
 
@@ -97,31 +100,53 @@ class MainActivity : ComponentActivity() {
                 end.linkTo(parent.end)
             })
 
-            TodoList(modifier = Modifier
-                .padding(top = 50.dp)
-                .constrainAs(list) {
-                    top.linkTo(searchBar.bottom)
-                    bottom.linkTo(parent.bottom)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                })
+            when (val state = mainViewModel.allTodosState.collectAsState().value) {
+                is MainViewModel.State.Error -> {
+                    SmallHeadingText(text = state.message, modifier = Modifier.constrainAs(list) {
+                        top.linkTo(searchBar.bottom)
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    })
+                }
+
+                MainViewModel.State.Loading -> {}
+                is MainViewModel.State.Success -> TodoList(state.data, modifier = Modifier
+                    .padding(top = 50.dp)
+                    .constrainAs(list) {
+                        top.linkTo(searchBar.bottom)
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    })
+            }
+
 
         }
     }
 
-
     @Composable
-    private fun TodoList(modifier: Modifier) {
+    private fun TodoList(list: List<TodoEntity>, modifier: Modifier) {
         val context = LocalContext.current
-        LazyColumn(modifier = modifier.padding(16.dp)) {
-            items(100) {
-                TodoItem {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            items(list) { todo ->
+                TodoItem(todo) {
                     context.startActivity(Intent(context, AddNotesActivity::class.java).also {
                         it.putExtra(AddNotesActivity.CONTENT_TYPE, AddNotesActivity.TYPE_EDIT)
+                        it.putExtra(AddNotesActivity.TODO_DATA, Gson().toJson(todo))
                     })
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        getData()
     }
 
 }
