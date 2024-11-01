@@ -103,12 +103,12 @@ fun DescriptionText(text: String, modifier: Modifier = Modifier, textColor: Colo
 }
 
 @Composable
-fun CustomSearchBar(modifier: Modifier) {
-    var text by remember { mutableStateOf("") }
+fun CustomSearchBar(modifier: Modifier, initialValue: String, callBack: (String) -> Unit) {
+
     TextField(
-        value = text,
+        value = initialValue,
         onValueChange = {
-            text = it
+            callBack(it)
         },
         modifier = modifier
             .padding(vertical = 10.dp, horizontal = 16.dp)
@@ -179,8 +179,11 @@ fun TodoItem(todoEntity: TodoEntity, callBack: () -> Unit = {}) {
             }
     ) {
         val (headingText, descriptionText, icon, indicator, optionsRow) = createRefs()
+
+        val iconDisplay = getIcon(todoEntity.iconType)
+
         Image(
-            painter = painterResource(id = R.drawable.work),
+            painter = painterResource(id = iconDisplay),
             contentDescription = "Icon",
             modifier = Modifier
                 .size(20.dp)
@@ -233,6 +236,18 @@ fun TodoItem(todoEntity: TodoEntity, callBack: () -> Unit = {}) {
 
     }
 
+}
+
+fun getIcon(iconNum: Int): Int {
+    return when (iconNum) {
+        1 -> R.drawable.work
+        2 -> R.drawable.medicine
+        3 -> R.drawable.education
+        4 -> R.drawable.exercise
+        5 -> R.drawable.food
+        6 -> R.drawable.prayer
+        else -> R.drawable.work
+    }
 }
 
 @Composable

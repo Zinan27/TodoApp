@@ -23,6 +23,8 @@ class MainViewModel @Inject constructor(appDatabase: AppDatabase) : ViewModel() 
     private val _todoState = MutableLiveData<State<Boolean>>()
     val todoState: LiveData<State<Boolean>> get() = _todoState
 
+    private var searchList = emptyList<TodoEntity>()
+
     fun getAllTodos() {
         viewModelScope.launch(Dispatchers.IO) {
             val list = todoDao.getAllTodos()
@@ -30,6 +32,7 @@ class MainViewModel @Inject constructor(appDatabase: AppDatabase) : ViewModel() 
                 _allTodosState.value = State.Error("No todos found")
             } else {
                 _allTodosState.value = State.Success(list)
+                searchList = list
             }
         }
     }
@@ -52,6 +55,35 @@ class MainViewModel @Inject constructor(appDatabase: AppDatabase) : ViewModel() 
         viewModelScope.launch(Dispatchers.IO) {
             todoDao.addTodo(todoEntity)
             _todoState.postValue(State.Success(true))
+        }
+    }
+
+    fun searchTodos(query: String) {
+        if (searchList.isEmpty()) {
+            return
+        }
+        searchList.filter {
+            it.title.contains(query, true)
+        }.also {
+            _allTodosState.value = State.Success(it)
+        }
+    }
+
+    fun sortByDescending() {
+        if (_allTodosState.value is State.Success) {
+            val list = (_allTodosState.value as State.Success).data
+            if (list.isNotEmpty()) {
+                _allTodosState.value = State.Success(list.sortedByDescending { it.title })
+            }
+        }
+    }
+
+    fun sortByAscending() {
+        if (_allTodosState.value is State.Success) {
+            val list = (_allTodosState.value as State.Success).data
+            if (list.isNotEmpty()) {
+                _allTodosState.value = State.Success(list.sortedBy { it.title })
+            }
         }
     }
 
