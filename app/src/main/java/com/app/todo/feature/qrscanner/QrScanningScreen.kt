@@ -43,6 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.withContext
 
+// Define a type alias for Android's size
 typealias AndroidSize = android.util.Size
 
 @Composable
@@ -51,39 +52,47 @@ fun QrScanningScreen(
     viewModel: QrScanViewModel,
     successQR: (String) -> Unit
 ) {
+    // Collect UI state from the ViewModel
     val uiState by viewModel.uiState.collectAsState()
 
+    // Manage camera permission state
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
+    // Get the lifecycle owner for the composable
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Observe the lifecycle to request camera permission when the app starts
     DisposableEffect(
         key1 = lifecycleOwner,
         effect = {
             val observer = LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_START) {
-                    cameraPermissionState.launchPermissionRequest()
+                    cameraPermissionState.launchPermissionRequest() // Launch permission request
                 }
             }
             lifecycleOwner.lifecycle.addObserver(observer)
 
             onDispose {
-                lifecycleOwner.lifecycle.removeObserver(observer)
+                lifecycleOwner.lifecycle.removeObserver(observer) // Remove observer on dispose
             }
         }
     )
 
+    // Initialize the preview view and set up camera components
     val context = LocalContext.current
     val previewView = remember { PreviewView(context) }
     val preview = Preview.Builder().build()
     val imageAnalysis: ImageAnalysis = ImageAnalysis.Builder()
         .setTargetResolution(
-            AndroidSize(previewView.width, previewView.height)
+            AndroidSize(previewView.width, previewView.height) // Set target resolution for analysis
         )
         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
         .build()
 
+    // Get the target rectangle for QR code detection
     val targetRect by remember { derivedStateOf { uiState.targetRect } }
 
+    // Launch effect to set the analyzer for the image analysis
     LaunchedEffect(targetRect) {
         imageAnalysis.setAnalyzer(
             Dispatchers.Default.asExecutor(),
@@ -91,29 +100,32 @@ fun QrScanningScreen(
                 targetRect = targetRect.toAndroidRect(),
                 previewView = previewView,
             ) { result ->
-                viewModel.onQrCodeDetected(result)
+                viewModel.onQrCodeDetected(result) // Handle detected QR code
             }
         )
     }
 
+    // Configure camera selector based on UI state
     val cameraSelector = CameraSelector.Builder()
         .requireLensFacing(uiState.lensFacing)
         .build()
     var camera by remember { mutableStateOf<Camera?>(null) }
 
+    // Launch effect to bind camera lifecycle
     LaunchedEffect(uiState.lensFacing) {
         val cameraProvider = ProcessCameraProvider.getInstance(context)
         camera = withContext(Dispatchers.IO) {
-            cameraProvider.get()
+            cameraProvider.get() // Get camera provider
         }.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
-        preview.setSurfaceProvider(previewView.surfaceProvider)
+        preview.setSurfaceProvider(previewView.surfaceProvider) // Set surface provider for preview
     }
 
+    // Handle camera permission UI
     FeatureThatRequiresCameraPermission(
         deniedContent = { status ->
             NeedCameraPermissionScreen(
                 requestPermission = cameraPermissionState::launchPermissionRequest,
-                shouldShowRationale = status.shouldShowRationale
+                shouldShowRationale = status.shouldShowRationale // Show rationale if needed
             )
         },
         grantedContent = {
@@ -123,14 +135,14 @@ fun QrScanningScreen(
                     uiState = uiState,
                     previewView = previewView,
                     onTargetPositioned = viewModel::onTargetPositioned,
-                    successQR = successQR
+                    successQR = successQR // Callback for successful QR scan
                 )
             }
         }
     )
 }
 
-
+// Composable function for displaying content on the screen
 @Composable
 private fun Content(
     modifier: Modifier,
@@ -141,51 +153,58 @@ private fun Content(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             factory = {
-                previewView
+                previewView // Display the camera preview
             }
         )
+
+        // Set up dimensions for the QR code scanning box
         val widthInPx: Float
         val heightInPx: Float
         val radiusInPx: Float
         with(LocalDensity.current) {
-            widthInPx = 250.dp.toPx()
-            heightInPx = 250.dp.toPx()
-            radiusInPx = 16.dp.toPx()
+            widthInPx = 250.dp.toPx() // Width of the QR box
+            heightInPx = 250.dp.toPx() // Height of the QR box
+            radiusInPx = 16.dp.toPx() // Corner radius for the box
         }
+
+        // Overlay for the scanning area
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = .5f)),
+                .background(Color.Black.copy(alpha = .5f)), // Semi-transparent background
             contentAlignment = Alignment.Center,
         ) {
             Canvas(
                 modifier = Modifier
-                    .size(250.dp)
-                    .border(1.dp, Color.White, RoundedCornerShape(16.dp))
+                    .size(250.dp) // Size of the QR box
+                    .border(1.dp, Color.White, RoundedCornerShape(16.dp)) // Border for the QR box
                     .onGloballyPositioned {
-                        onTargetPositioned(it.boundsInRoot())
+                        onTargetPositioned(it.boundsInRoot()) // Position the target for QR code
                     }
             ) {
+                // Calculate offset for drawing the cutout rectangle
                 val offset = Offset(
                     x = (size.width - widthInPx) / 2,
                     y = (size.height - heightInPx) / 2,
                 )
                 val cutoutRect = Rect(offset, Size(widthInPx, heightInPx))
-                // Source
+
+                // Draw a transparent rectangle for QR code scanning
                 drawRoundRect(
                     topLeft = cutoutRect.topLeft,
                     size = cutoutRect.size,
                     cornerRadius = CornerRadius(radiusInPx, radiusInPx),
                     color = Color.Transparent,
-                    blendMode = BlendMode.Clear
+                    blendMode = BlendMode.Clear // Clear blend mode for cutout effect
                 )
             }
         }
+
+        // Handle successful QR detection
         if (uiState.detectedQR.isNotEmpty()) {
-            successQR(uiState.detectedQR)
+            successQR(uiState.detectedQR) // Invoke callback with detected QR code
         }
     }
 }

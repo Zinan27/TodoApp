@@ -39,55 +39,64 @@ import com.app.todo.utils.getDateTimeFromTimestamp
 import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 
-
 @AndroidEntryPoint
 class AddNotesActivity : ComponentActivity() {
 
+    // ViewModel to manage UI-related data for the activity
     private val mainViewModel by viewModels<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Set the content view using Jetpack Compose
         setContent {
             ToDoTheme {
+                // Display the AddNotesScreen with the retrieved TodoEntity data
                 AddNotesScreen(getTodoData())
             }
         }
+        // Observe changes in the ViewModel's todoState
         addObservers()
     }
 
     private fun addObservers() {
+        // Show a Toast message when a todo item is added
         mainViewModel.todoState.observe(this) {
             Toast.makeText(this, "Todo added successfully", Toast.LENGTH_SHORT).show()
-            finish()
+            finish() // Close the activity
         }
     }
 
+    // Retrieve the content type from the intent
     private fun getContentType() = intent.getStringExtra(CONTENT_TYPE) ?: TYPE_ADD
 
+    // Retrieve TodoEntity data from the intent as a JSON string
     private fun getTodoData(): TodoEntity {
         val todoJson = intent.getStringExtra(TODO_DATA) ?: return TodoEntity()
-        val todoEntity = Gson().fromJson(todoJson, TodoEntity::class.java)
-        return todoEntity
+        // Deserialize the JSON string into a TodoEntity object
+        return Gson().fromJson(todoJson, TodoEntity::class.java)
     }
 
     @Composable
     private fun AddNotesScreen(todoEntity: TodoEntity) {
-
+        // Manage state for title, description, timestamp, and icon using remember
         var title by remember { mutableStateOf(todoEntity.title) }
         var description by remember { mutableStateOf(todoEntity.description) }
         var timeStamp by remember { mutableLongStateOf(todoEntity.timeStamp) }
         var icon by remember { mutableIntStateOf(todoEntity.iconType) }
 
+        // Use ConstraintLayout for arranging UI components
         ConstraintLayout(Modifier.fillMaxSize()) {
-
+            // Create references for the UI elements
             val (saveItem, backButton, heading, titleField, descriptionField, datePickerField, textIcon, iconChoose, deleteBtn) = createRefs()
 
+            // Back button
             BackButton(Modifier.constrainAs(backButton) {
                 top.linkTo(heading.top)
                 start.linkTo(parent.start, margin = 16.dp)
                 bottom.linkTo(heading.bottom)
             })
 
+            // Save button
             SmallHeadingText(
                 text = "Save",
                 textColor = PrimaryColor,
@@ -98,10 +107,12 @@ class AddNotesActivity : ComponentActivity() {
                         bottom.linkTo(heading.bottom)
                     }
                     .clickable {
+                        // Validate input data before saving
                         validateData(todoEntity.id, title, description, timeStamp, icon)
                     }
             )
 
+            // Heading text
             HeadingText(
                 text = if (getContentType() == TYPE_EDIT) "Edit Task" else "Add Task",
                 modifier = Modifier.constrainAs(heading) {
@@ -110,6 +121,7 @@ class AddNotesActivity : ComponentActivity() {
                     top.linkTo(parent.top, margin = 20.dp)
                 })
 
+            // Title input field
             CustomTextField(
                 Modifier
                     .padding(top = 30.dp)
@@ -119,9 +131,10 @@ class AddNotesActivity : ComponentActivity() {
                         top.linkTo(heading.bottom)
                     }, "Add Title", title
             ) {
-                title = it
+                title = it // Update title state
             }
 
+            // Description input field
             CustomTextField(
                 Modifier
                     .padding(top = 10.dp)
@@ -131,17 +144,19 @@ class AddNotesActivity : ComponentActivity() {
                         top.linkTo(titleField.bottom)
                     }, "Add Description", description
             ) {
-                description = it
+                description = it // Update description state
             }
 
+            // Date picker field
             DatePickerField(timeStamp, Modifier.constrainAs(datePickerField) {
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
                 top.linkTo(descriptionField.bottom)
             }) {
-                timeStamp = it
+                timeStamp = it // Update timestamp state
             }
 
+            // Icon selection text
             SmallHeadingText(
                 text = "Choose Icon",
                 modifier = Modifier
@@ -152,6 +167,7 @@ class AddNotesActivity : ComponentActivity() {
                         top.linkTo(datePickerField.bottom)
                     })
 
+            // Icon selection field
             ChooseIconField(
                 icon,
                 Modifier
@@ -161,9 +177,10 @@ class AddNotesActivity : ComponentActivity() {
                         end.linkTo(parent.end)
                         top.linkTo(textIcon.bottom)
                     }) {
-                icon = it
+                icon = it // Update icon state
             }
 
+            // Delete button visible only when editing a task
             if (getContentType() == TYPE_EDIT) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -181,7 +198,7 @@ class AddNotesActivity : ComponentActivity() {
                             start.linkTo(parent.start)
                         }
                         .clickable {
-                            mainViewModel.deleteTodo(todoEntity)
+                            mainViewModel.deleteTodo(todoEntity) // Delete the todo item
                         }
                 ) {
                     HeadingText(
@@ -190,11 +207,10 @@ class AddNotesActivity : ComponentActivity() {
                     )
                 }
             }
-
-
         }
     }
 
+    // Validate the input data before saving
     private fun validateData(
         id: Long,
         title: String,
@@ -202,16 +218,19 @@ class AddNotesActivity : ComponentActivity() {
         timeStamp: Long,
         icon: Int
     ) {
+        // Check if title and description are not empty
         if (title.isEmpty() || description.isEmpty()) {
             Toast.makeText(this, "Please fill all the fields", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Check if the timestamp is valid
         if (timeStamp < System.currentTimeMillis()) {
             Toast.makeText(this, "Please select a valid date", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Create or update TodoEntity based on content type
         if (getContentType() == TYPE_EDIT) {
             val todoEntity = TodoEntity(
                 id,
@@ -222,7 +241,7 @@ class AddNotesActivity : ComponentActivity() {
                 icon,
                 true
             )
-            mainViewModel.updateTodo(todoEntity)
+            mainViewModel.updateTodo(todoEntity) // Update the todo item
         } else {
             val todoEntity = TodoEntity(
                 title = title,
@@ -232,21 +251,19 @@ class AddNotesActivity : ComponentActivity() {
                 iconType = icon,
                 status = true
             )
-            mainViewModel.addTodo(todoEntity)
+            mainViewModel.addTodo(todoEntity) // Add a new todo item
         }
-
     }
 
     companion object {
-        const val CONTENT_TYPE = "content_type"
-        const val TYPE_EDIT = "edit"
-        const val TYPE_ADD = "add"
-        const val TODO_DATA = "todo_data"
+        const val CONTENT_TYPE = "content_type" // Key for content type in the intent
+        const val TYPE_EDIT = "edit" // Type for editing a todo
+        const val TYPE_ADD = "add" // Type for adding a todo
+        const val TODO_DATA = "todo_data" // Key for todo data in the intent
     }
-
 }
 
-
+// Uncomment to preview the composable function
 //@Preview(showBackground = true)
 //@Composable
 //fun GreetingPreview2() {
