@@ -103,12 +103,12 @@ fun DescriptionText(text: String, modifier: Modifier = Modifier, textColor: Colo
 }
 
 @Composable
-fun CustomSearchBar(modifier: Modifier) {
-    var text by remember { mutableStateOf("") }
+fun CustomSearchBar(modifier: Modifier, initialValue: String, callBack: (String) -> Unit) {
+
     TextField(
-        value = text,
+        value = initialValue,
         onValueChange = {
-            text = it
+            callBack(it)
         },
         modifier = modifier
             .padding(vertical = 10.dp, horizontal = 16.dp)

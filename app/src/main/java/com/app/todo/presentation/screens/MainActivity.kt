@@ -2,23 +2,22 @@ package com.app.todo.presentation.screens
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -61,7 +60,7 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            val (import, addImg, heading, searchBar, list) = createRefs()
+            val (import, addImg, heading, searchBar, list, sort) = createRefs()
             Image(
                 painter = painterResource(id = R.drawable.add),
                 contentDescription = "Add button",
@@ -100,11 +99,38 @@ class MainActivity : ComponentActivity() {
                     }
             )
 
+            var searchQuery by remember { mutableStateOf("") }
+
             CustomSearchBar(Modifier.constrainAs(searchBar) {
                 top.linkTo(heading.bottom, margin = 10.dp)
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
-            })
+            }, searchQuery) {
+                searchQuery = it
+                mainViewModel.searchTodos(it)
+            }
+
+            var isAscending by remember { mutableStateOf(false) }
+
+            Image(
+                painter = painterResource(id = if (isAscending) R.drawable.atoz else R.drawable.ztoa),
+                contentDescription = "Sort Button",
+                modifier = Modifier
+                    .size(25.dp)
+                    .constrainAs(sort) {
+                        end.linkTo(parent.end, margin = 30.dp)
+                        top.linkTo(searchBar.top)
+                        bottom.linkTo(searchBar.bottom)
+                    }
+                    .clickable {
+                        isAscending = isAscending.not()
+                        if (isAscending) {
+                            mainViewModel.sortByAscending()
+                        } else {
+                            mainViewModel.sortByDescending()
+                        }
+                    }
+            )
 
             when (val state = mainViewModel.allTodosState.collectAsState().value) {
                 is MainViewModel.State.Error -> {
