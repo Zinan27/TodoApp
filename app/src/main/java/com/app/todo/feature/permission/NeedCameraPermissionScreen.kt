@@ -38,7 +38,7 @@ fun NeedCameraPermissionScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = requestPermission) {
-            Text("Request permission")
+            Text("Please Request permission")
         }
     }
 }
